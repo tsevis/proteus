@@ -5,70 +5,76 @@ public struct ActionReport: Sendable {
     public let failures: [String]
 }
 
+/// What an action did, and how to take it back.
+public struct ActionOutcome: Sendable {
+    public let report: ActionReport
+    public let journal: Journal
+}
+
 public enum FileActions {
-    /// Renames items deepest-first, so renaming a folder never invalidates
-    /// the paths of selected items inside it.
+    /// Renames by find and replace: a shortcut through the planner, used by tests and scripts.
     public static func rename(_ items: [FoundItem], matcher: NameMatcher, replacement: String) -> ActionReport {
-        let ordered = items.sorted { $0.depth > $1.depth }
+        let proposals = items.map { (item: $0, name: matcher.replacing(in: $0.name, with: replacement)) }
+        let steps = RenamePlanner.plan(proposals, numberClashes: false)
+        let blocked = steps.compactMap { step in step.problem.map { "\(step.item.name): \($0.localizedDescription)" } }
+        let outcome = apply(steps)
+        return ActionReport(succeeded: outcome.report.succeeded, failures: blocked + outcome.report.failures)
+    }
+
+    /// Carries out the changing steps of a plan, deepest first, so renaming a
+    /// folder never invalidates the paths of selected items inside it. Every
+    /// check is made again against the disk as it is now.
+    public static func apply(_ steps: [RenameStep]) -> ActionOutcome {
+        let ordered = steps.filter(\.isChange).sorted { $0.item.depth > $1.item.depth }
         var succeeded = 0
         var failures: [String] = []
-        for item in ordered {
-            switch renameOne(item, matcher: matcher, replacement: replacement) {
-            case .success(true): succeeded += 1
-            case .success(false): break
-            case .failure(let error): failures.append("\(item.name): \(error.localizedDescription)")
+        var entries: [JournalEntry] = []
+        for step in ordered {
+            switch renameOne(step.item, to: step.newName) {
+            case .success(let destination):
+                succeeded += 1
+                if let fileID = step.item.fileID {
+                    entries.append(JournalEntry(original: step.item.url, current: destination, fileID: fileID))
+                }
+            case .failure(let error):
+                failures.append("\(step.item.name): \(error.localizedDescription)")
             }
         }
-        return ActionReport(succeeded: succeeded, failures: failures)
+        return ActionOutcome(report: ActionReport(succeeded: succeeded, failures: failures),
+                             journal: Journal(kind: .rename, entries: entries))
     }
 
-    /// The name `item` would get, or nil when it would not change.
-    public static func plannedName(for item: FoundItem, matcher: NameMatcher, replacement: String) -> String? {
-        let newName = matcher.replacing(in: item.name, with: replacement)
-        return newName == item.name ? nil : newName
-    }
-
-    /// Returns `.success(false)` when the name would not change.
-    private static func renameOne(_ item: FoundItem, matcher: NameMatcher, replacement: String) -> Result<Bool, Error> {
-        guard let newName = plannedName(for: item, matcher: matcher, replacement: replacement) else {
-            return .success(false)
-        }
-        if let problem = validate(newName, replacing: item.name) { return .failure(problem) }
-        if let problem = checkUnchanged(item) { return .failure(problem) }
-
+    private static func renameOne(_ item: FoundItem, to newName: String) -> Result<URL, Error> {
+        if let problem = RenamePlanner.validate(newName, replacing: item.name) { return .failure(problem) }
+        if let problem = checkUnchanged(item.url, expected: item.fileID) { return .failure(problem) }
         let destination = item.url.deletingLastPathComponent().appendingPathComponent(newName)
-        // The volume may treat the new name as the same file (a case-only or
-        // accent-normalisation change); anything else already there is a clash.
-        let occupant = FileScanner.fileID(at: destination)
-        let sameFile = occupant != nil && occupant == item.fileID
-        if occupant != nil, !sameFile { return .failure(RenameError.alreadyExists(newName)) }
         do {
-            if sameFile {
-                try moveViaTemporaryName(item.url, to: destination)
-            } else {
-                try FileManager.default.moveItem(at: item.url, to: destination)
-            }
-            return .success(true)
+            try move(item.url, to: destination, fileID: item.fileID)
+            return .success(destination)
         } catch {
             return .failure(error)
         }
     }
 
-    private static func validate(_ newName: String, replacing oldName: String) -> RenameError? {
-        if newName.isEmpty || newName.contains("/") || newName == "." || newName == ".." {
-            return .invalidName(newName)
+    /// Moves without ever replacing anything. The volume may treat the new
+    /// name as the same file (a case-only or accent-normalisation change);
+    /// anything else already there is a clash.
+    static func move(_ source: URL, to destination: URL, fileID: FileFingerprint?) throws {
+        let occupant = FileScanner.fileID(at: destination)
+        let sameFile = occupant != nil && occupant == fileID
+        if occupant != nil, !sameFile { throw RenameError.alreadyExists(destination.lastPathComponent) }
+        if sameFile {
+            try moveViaTemporaryName(source, to: destination)
+        } else {
+            try FileManager.default.moveItem(at: source, to: destination)
         }
-        if newName.hasPrefix("."), !oldName.hasPrefix(".") {
-            return .wouldHide(newName)
-        }
-        return nil
     }
 
     /// Refuses to act when the item has gone, or something else now sits at its path.
-    private static func checkUnchanged(_ item: FoundItem) -> RenameError? {
-        let current = FileScanner.fileID(at: item.url)
+    static func checkUnchanged(_ url: URL, expected: FileFingerprint?) -> RenameError? {
+        let current = FileScanner.fileID(at: url)
         if current == nil { return .vanished }
-        if let expected = item.fileID, current != expected { return .replaced }
+        if let expected, current != expected { return .replaced }
         return nil
     }
 
@@ -95,40 +101,28 @@ public enum FileActions {
 
     /// Moves items to the Trash (recoverable). Items inside another selected
     /// folder are skipped, since they go to the Trash with that folder.
-    public static func trash(_ items: [FoundItem]) -> ActionReport {
+    public static func trash(_ items: [FoundItem]) -> ActionOutcome {
         let covered = coveredByFolder(items)
         var succeeded = 0
         var failures: [String] = []
+        var entries: [JournalEntry] = []
         for item in items where !covered.contains(item.id) {
-            if let problem = checkUnchanged(item) {
+            if let problem = checkUnchanged(item.url, expected: item.fileID) {
                 failures.append("\(item.name): \(problem.localizedDescription)")
                 continue
             }
             do {
-                try FileManager.default.trashItem(at: item.url, resultingItemURL: nil)
+                var inTrash: NSURL?
+                try FileManager.default.trashItem(at: item.url, resultingItemURL: &inTrash)
                 succeeded += 1
+                if let inTrash = inTrash as URL?, let fileID = item.fileID {
+                    entries.append(JournalEntry(original: item.url, current: inTrash, fileID: fileID))
+                }
             } catch {
                 failures.append("\(item.name): \(error.localizedDescription)")
             }
         }
-        return ActionReport(succeeded: succeeded, failures: failures)
-    }
-}
-
-public enum RenameError: LocalizedError {
-    case invalidName(String)
-    case alreadyExists(String)
-    case wouldHide(String)
-    case vanished
-    case replaced
-
-    public var errorDescription: String? {
-        switch self {
-        case .invalidName(let name): return String(localized: "Invalid new name “\(name)”")
-        case .alreadyExists(let name): return String(localized: "“\(name)” already exists in the same folder")
-        case .wouldHide(let name): return String(localized: "“\(name)” starts with a dot and would become hidden")
-        case .vanished: return String(localized: "No longer there: moved or deleted since the search")
-        case .replaced: return String(localized: "Something else is now in its place. Search again")
-        }
+        return ActionOutcome(report: ActionReport(succeeded: succeeded, failures: failures),
+                             journal: Journal(kind: .trash, entries: entries))
     }
 }

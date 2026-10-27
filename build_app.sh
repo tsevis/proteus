@@ -23,11 +23,26 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIdentifier</key><string>com.tsevis.proteus</string>
     <key>CFBundleExecutable</key><string>Proteus</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.0</string>
+    <key>CFBundleShortVersionString</key><string>1.1</string>
     <key>LSMinimumSystemVersion</key><string>15.0</string>
-    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleVersion</key><string>2</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>NSHighResolutionCapable</key><true/>
+    <key>CFBundleDocumentTypes</key>
+    <array><dict>
+        <key>CFBundleTypeName</key><string>Folder</string>
+        <key>CFBundleTypeRole</key><string>Viewer</string>
+        <key>LSHandlerRank</key><string>None</string>
+        <key>LSItemContentTypes</key><array><string>public.folder</string></array>
+    </dict></array>
+    <key>NSServices</key>
+    <array><dict>
+        <key>NSMenuItem</key><dict><key>default</key><string>Rename with Proteus</string></dict>
+        <key>NSMessage</key><string>openInProteus</string>
+        <key>NSPortName</key><string>Proteus</string>
+        <key>NSRequiredContext</key><dict/>
+        <key>NSSendFileTypes</key><array><string>public.folder</string></array>
+    </dict></array>
 </dict>
 </plist>
 PLIST

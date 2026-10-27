@@ -4,6 +4,8 @@ import ProteusCore
 
 @MainActor
 final class SearchModel: ObservableObject {
+    enum Mode: String, CaseIterable { case findReplace, batch }
+
     // Changing any search input discards the results, so an action can only
     // ever use the search the table and the confirmation dialog describe.
     @Published var folder: URL? { didSet { if folder != oldValue { discardResults() } } }
@@ -13,43 +15,49 @@ final class SearchModel: ObservableObject {
     @Published var includeFiles = true { didSet { if includeFiles != oldValue { discardResults() } } }
     @Published var includeFolders = true { didSet { if includeFolders != oldValue { discardResults() } } }
     @Published var includeHidden = false { didSet { if includeHidden != oldValue { discardResults() } } }
-    @Published var replacement = ""
+    @Published var useSpotlight = false { didSet { if useSpotlight != oldValue { discardResults() } } }
+    @Published var filters = FilterInputs() { didSet { if filters != oldValue { discardResults() } } }
+
+    // Inputs of the two tabs. They only change the plan, never the results.
+    @Published var mode = Mode.findReplace { didSet { rulesChanged() } }
+    @Published var replacement = "" { didSet { replan() } }
+    @Published var transform = NameTransform.none { didSet { replan() } }
+    @Published var keepExtension = true { didSet { replan() } }
+    @Published var rules: [BatchRule] = [.starter(.currentName)] { didSet { rulesChanged() } }
+    @Published var numberClashes = true { didSet { replan() } }
+    @Published var restartNumbering = false { didSet { replan() } }
 
     @Published private(set) var items: [FoundItem] = []
-    @Published var selection: Set<String> = []
-    @Published private(set) var status = String(localized: "Choose a folder and type what you are looking for.")
-    @Published private(set) var failures: [String] = []
-    @Published private(set) var isBusy = false
+    @Published var selection: Set<String> = [] { didSet { if selection != oldValue { replan() } } }
+    @Published var highlighted: Set<String> = []
+    @Published var previewURL: URL?
+    @Published var status = String(localized: "Choose a folder and type what you are looking for.")
+    @Published var failures: [String] = []
+    @Published var isBusy = false
+    @Published private(set) var plan: [RenameStep] = []
+    @Published var lastJournal: Journal?
+    @Published private(set) var recentFolders: [URL] = RecentFolders.load()
 
     /// The matcher of the search whose results are on screen.
     private(set) var searched: NameMatcher?
+    private(set) var planByID: [String: RenameStep] = [:]
+    var takenDates: [String: Date] = [:]
+    /// Items whose EXIF date was already looked for, found or not.
+    var datesTried: Set<String> = []
     /// Bumped by every search and every discard, so a slow scan that finishes
     /// after the inputs changed cannot put stale results on screen.
-    private var generation = 0
+    private(set) var generation = 0
+
+    init() {
+        lastJournal = JournalStore.load(onError: { [weak self] in self?.status = $0 })
+    }
 
     var selectedItems: [FoundItem] { items.filter { selection.contains($0.id) } }
-    var canSearch: Bool { folder != nil && !term.isEmpty && !isBusy }
+    var canSearch: Bool { folder != nil && !isBusy }
     var canAct: Bool { searched != nil && !selection.isEmpty && !isBusy }
-
-    /// Selected items whose name the rename would actually change.
-    var renameTargets: [FoundItem] {
-        guard let searched else { return [] }
-        return selectedItems.filter {
-            FileActions.plannedName(for: $0, matcher: searched, replacement: replacement) != nil
-        }
-    }
-
-    /// Selected items not already inside another selected folder.
-    var trashTargets: [FoundItem] {
-        let selected = selectedItems
-        let covered = FileActions.coveredByFolder(selected)
-        return selected.filter { !covered.contains($0.id) }
-    }
-
-    /// A few "old → new" lines for the confirmation dialog.
-    var renameExamples: String {
-        renameTargets.prefix(3).map { "\($0.name) → \(newName(for: $0))" }.joined(separator: "\n")
-    }
+    /// An empty search lists everything, which is fine to rename but far too
+    /// broad to throw away in one click.
+    var canTrash: Bool { canAct && !(searched?.matchesEverything ?? true) }
 
     func chooseFolder() {
         let panel = NSOpenPanel()
@@ -57,11 +65,22 @@ final class SearchModel: ObservableObject {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.prompt = String(localized: "Choose")
-        if panel.runModal() == .OK { folder = panel.url }
+        if panel.runModal() == .OK, let url = panel.url { open(url) }
     }
 
-    func newName(for item: FoundItem) -> String {
-        searched?.replacing(in: item.name, with: replacement) ?? item.name
+    /// Opens a folder from the panel, a drop, the Dock, Finder or the recent list.
+    func open(_ url: URL) {
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else {
+            status = String(localized: "Not a folder: \(url.lastPathComponent)")
+            return
+        }
+        do { try FileScanner.refuseIfInsidePackage(url) } catch {
+            status = error.localizedDescription
+            return
+        }
+        folder = url
+        recentFolders = RecentFolders.remember(url)
     }
 
     func relativeLocation(of item: FoundItem) -> String {
@@ -84,40 +103,34 @@ final class SearchModel: ObservableObject {
             return
         }
         let options = ScanOptions(includeFiles: includeFiles, includeFolders: includeFolders,
-                                  includeHidden: includeHidden)
+                                  includeHidden: includeHidden, filters: filters.scanFilters)
         generation += 1
         let mine = generation
         isBusy = true
         status = String(localized: "Searching…")
         defer { isBusy = false }
         do {
-            let found = try await Task.detached {
-                try FileScanner.scan(root: folder, matcher: matcher, options: options)
-            }.value
+            let found = useSpotlight
+                ? try await SpotlightSearch.run(root: folder, matcher: matcher, options: options)
+                : try await Task.detached { try FileScanner.scan(root: folder, matcher: matcher, options: options) }.value
             guard mine == generation else { return }
             searched = matcher
             items = found
+            takenDates = [:]
+            datesTried = []
             selection = Set(found.map(\.id))
+            replan()
+            highlighted = []
             status = String(localized: "Found: \(found.count)")
+            if found.isEmpty, useSpotlight {
+                status += " " + String(localized: "(Spotlight may not have indexed this folder.)")
+            }
+            isBusy = false
+            loadTakenDatesIfNeeded()
         } catch {
             guard mine == generation else { return }
             status = String(localized: "Search error: \(error.localizedDescription)")
         }
-    }
-
-    func renameSelected() async {
-        guard canAct, let matcher = searched else { return }
-        let targets = renameTargets
-        let replacement = replacement
-        await perform({ String(localized: "Renamed: \($0)") }) {
-            FileActions.rename(targets, matcher: matcher, replacement: replacement)
-        }
-    }
-
-    func trashSelected() async {
-        guard canAct else { return }
-        let targets = selectedItems
-        await perform({ String(localized: "Moved to Trash: \($0)") }) { FileActions.trash(targets) }
     }
 
     private func discardResults() {
@@ -129,13 +142,8 @@ final class SearchModel: ObservableObject {
         status = String(localized: "Settings changed. Press Search again.")
     }
 
-    private func perform(_ summary: (Int) -> String, _ action: @escaping @Sendable () -> ActionReport) async {
-        isBusy = true
-        let report = await Task.detached(operation: action).value
-        isBusy = false
-        failures = report.failures
-        await search()
-        let failNote = report.failures.isEmpty ? "" : " — " + String(localized: "Failed: \(report.failures.count)")
-        status = summary(report.succeeded) + failNote + ". " + status
+    func setPlan(_ steps: [RenameStep]) {
+        plan = steps
+        planByID = Dictionary(uniqueKeysWithValues: steps.map { ($0.id, $0) })
     }
 }
