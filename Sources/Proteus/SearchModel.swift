@@ -43,6 +43,9 @@ final class SearchModel: ObservableObject {
     /// Items added by hand (dropped or chosen). They stay in the list across
     /// searches until the list is cleared.
     var pickedPaths: [String] = []
+    /// Items taken out of the list. Later searches leave them out too, until
+    /// another folder is opened or the list is cleared.
+    var removedPaths: Set<String> = []
     private(set) var planByID: [String: RenameStep] = [:]
     var takenDates: [String: Date] = [:]
     /// Items whose EXIF date was already looked for, found or not.
@@ -82,6 +85,7 @@ final class SearchModel: ObservableObject {
             status = error.localizedDescription
             return
         }
+        removedPaths = []
         folder = url
         recentFolders = RecentFolders.remember(url)
     }
@@ -119,10 +123,10 @@ final class SearchModel: ObservableObject {
                 : try await Task.detached { try FileScanner.scan(root: folder, matcher: matcher, options: options) }.value
             guard mine == generation else { return }
             searched = matcher
-            items = found
+            items = found.filter { !removedPaths.contains($0.id) }
             takenDates = [:]
             datesTried = []
-            selection = Set(found.map(\.id))
+            selection = Set(items.map(\.id))
             mergePicked()
             replan()
             highlighted = []

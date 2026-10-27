@@ -22,6 +22,7 @@ extension SearchModel {
         lastJournal = nil
         JournalStore.clear(onError: { notes.append($0) })
         pickedPaths = pickedPaths.map { journal.relocate($0, undoing: true) }
+        removedPaths = Set(removedPaths.map { journal.relocate($0, undoing: true) })
         await finish(String(localized: "Restored: \(report.succeeded)"), report, notes: notes)
     }
 
@@ -79,6 +80,7 @@ extension SearchModel {
         // Anything that changed the disk replaces the older record, so Undo
         // never reaches past this action to an earlier one.
         pickedPaths = pickedPaths.map { outcome.journal.relocate($0, undoing: false) }
+        removedPaths = Set(removedPaths.map { outcome.journal.relocate($0, undoing: false) })
         if outcome.report.succeeded > 0 {
             lastJournal = outcome.journal.entries.isEmpty ? nil : outcome.journal
             if let journal = lastJournal {

@@ -33,10 +33,14 @@ struct ResultsTable: View {
             Divider()
             Button("Check") { model.selection.formUnion(ids) }
             Button("Uncheck") { model.selection.subtract(ids) }
+            Divider()
+            Button("Remove from List") { model.removeFromList(ids) }
         } primaryAction: { ids in
             highlight(ids)
             model.openHighlighted()
         }
+        // Delete takes the highlighted rows out of the list; nothing on disk changes.
+        .onDeleteCommand { model.removeFromList(model.highlighted) }
         .onKeyPress(.space) {
             guard !model.highlighted.isEmpty else { return .ignored }
             model.previewURL = model.previewURL == nil ? model.highlightedURLs.first : nil

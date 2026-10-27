@@ -221,4 +221,10 @@ T = {
         "Aggiungi file o cartelle direttamente all’elenco, senza ricerca. Puoi anche trascinarli sull’elenco.",
         "Füge Dateien oder Ordner direkt ohne Suche zur Liste hinzu. Du kannst sie auch auf die Liste ziehen.",
         "Додайте файли чи папки до списку напряму, без пошуку. Їх також можна перетягнути в список."],
+    "Remove from List": ["Αφαίρεση από τη λίστα", "Rimuovi dall’elenco", "Aus der Liste entfernen",
+                         "Вилучити зі списку"],
+    "Removed from the list: %lld (files unchanged)": [
+        "Αφαιρέθηκαν από τη λίστα: %lld (τα αρχεία δεν άλλαξαν)", "Rimossi dall’elenco: %lld (i file non sono cambiati)",
+        "Aus der Liste entfernt: %lld (die Dateien bleiben unverändert)",
+        "Вилучено зі списку: %lld (файли не змінено)"],
 }
