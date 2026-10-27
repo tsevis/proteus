@@ -10,7 +10,10 @@ struct ScopeForm: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Button("Folder…") { model.chooseFolder() }
+                    .help("Search inside a folder and its subfolders")
                 recentMenu
+                Button("Add Files…") { model.chooseItems() }
+                    .help("Add files or folders to the list directly, without a search. You can also drag them onto the list.")
                 Group {
                     if let path = model.folder?.path { Text(verbatim: path) } else { Text("No folder — or drop one here") }
                 }

@@ -114,6 +114,27 @@ public enum FileScanner {
         return sorted(items)
     }
 
+    /// Items picked one by one (dropped or chosen), not found by a search.
+    /// Each is listed itself, never its contents. Anything inside a package
+    /// or a protected folder is refused, as the folder walk would.
+    public static func items(for urls: [URL]) -> (items: [FoundItem], refused: [String]) {
+        let everything = (try? NameMatcher(term: "", caseSensitive: false, useRegex: false))!
+        let options = ScanOptions(includeFiles: true, includeFolders: true, includeHidden: true)
+        var items: [FoundItem] = []
+        var refused: [String] = []
+        for url in urls.map(\.standardizedFileURL) {
+            let inProtected = url.pathComponents.contains(where: protectedFolders.contains)
+            let inPackage = (try? refuseIfInsidePackage(url.deletingLastPathComponent())) == nil
+            guard !inProtected, !inPackage,
+                  let item = inspect(url, rootDepth: 0, matcher: everything, options: options) else {
+                refused.append(url.lastPathComponent)
+                continue
+            }
+            items.append(item)
+        }
+        return (sorted(items), refused)
+    }
+
     /// The enumerator skips packages below the root, never the root itself:
     /// a Photos library opened as the folder would be walked like any other.
     public static func refuseIfInsidePackage(_ root: URL) throws {
@@ -148,7 +169,9 @@ public enum FileScanner {
         guard matcher.matches(url.lastPathComponent) else { return nil }
         let item = FoundItem(
             url: url, isDirectory: isDir,
-            depth: url.standardizedFileURL.pathComponents.count - rootDepth,
+            // Counted from the volume's root, so items from different searches
+            // and from the hand-picked list order correctly against each other.
+            depth: url.standardizedFileURL.pathComponents.count,
             fileID: values.flatMap(FileFingerprint.init),
             created: values?.creationDate, modified: values?.contentModificationDate,
             size: values?.fileSize.map(Int64.init), tags: values?.tagNames ?? []

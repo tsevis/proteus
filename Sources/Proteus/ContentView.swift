@@ -31,9 +31,11 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(minWidth: 920, minHeight: 660)
+        // Outside the list, one folder becomes the folder to search; anything
+        // else is added to the list.
         .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first else { return false }
-            model.open(url)
+            guard !urls.isEmpty else { return false }
+            if urls.count == 1, isPlainFolder(urls[0]) { model.open(urls[0]) } else { model.addItems(urls) }
             return true
         }
         .onReceive(inbox.$pending.compactMap { $0 }) { url in
@@ -56,6 +58,11 @@ struct ContentView: View {
         } message: {
             Text("Every item goes back to its previous name and place. Anything changed since is left alone.")
         }
+    }
+
+    private func isPlainFolder(_ url: URL) -> Bool {
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
+        return values?.isDirectory == true && values?.isPackage != true
     }
 
     private var renameMessage: String {

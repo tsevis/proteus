@@ -192,4 +192,33 @@ T = {
         "«%@» è un pacchetto (un’app o una libreria). Proteus non lavora all’interno dei pacchetti.",
         "„%@“ ist ein Paket (eine App oder Mediathek). Proteus arbeitet nicht in Paketen.",
         "«%@» — це пакет (програма чи бібліотека). Proteus не працює всередині пакетів."],
+    "Choose a Folder… and press Search: an empty name field lists everything inside it.": [
+        "Διάλεξε Φάκελο… και πάτα Αναζήτηση: με κενό πεδίο ονόματος εμφανίζονται όλα όσα περιέχει.",
+        "Scegli una Cartella… e premi Cerca: con il campo nome vuoto viene elencato tutto il contenuto.",
+        "Wähle Ordner … und klicke auf Suchen: Ein leeres Namensfeld listet den gesamten Inhalt.",
+        "Виберіть Папку… й натисніть «Шукати»: з порожнім полем назви буде показано весь вміст."],
+    "Search inside a folder and its subfolders": [
+        "Αναζήτηση μέσα σε φάκελο και στους υποφακέλους του", "Cerca in una cartella e nelle sue sottocartelle",
+        "In einem Ordner und seinen Unterordnern suchen", "Шукати в папці та її підпапках"],
+    "Two ways to fill this list": [
+        "Δύο τρόποι να γεμίσει αυτή η λίστα", "Due modi per riempire questo elenco",
+        "Zwei Wege, diese Liste zu füllen", "Два способи заповнити цей список"],
+    "Added: %lld": ["Προστέθηκαν: %lld", "Aggiunti: %lld", "Hinzugefügt: %lld", "Додано: %lld"],
+    "Add Files…": ["Προσθήκη αρχείων…", "Aggiungi file…", "Dateien hinzufügen …", "Додати файли…"],
+    "Clear List": ["Καθαρισμός λίστας", "Svuota elenco", "Liste leeren", "Очистити список"],
+    "Or drag files and folders from Finder onto this list, or use Add Files…": [
+        "Ή σύρε αρχεία και φακέλους από το Finder σε αυτή τη λίστα, ή χρησιμοποίησε την Προσθήκη αρχείων…",
+        "Oppure trascina file e cartelle dal Finder su questo elenco, o usa Aggiungi file…",
+        "Oder ziehe Dateien und Ordner aus dem Finder auf diese Liste oder nutze „Dateien hinzufügen …“",
+        "Або перетягніть файли й папки з Finder у цей список чи скористайтеся «Додати файли…»"],
+    "%@: inside a package or a protected folder, not added": [
+        "%@: βρίσκεται μέσα σε πακέτο ή προστατευμένο φάκελο, δεν προστέθηκε",
+        "%@: si trova in un pacchetto o in una cartella protetta, non aggiunto",
+        "%@: liegt in einem Paket oder geschützten Ordner, nicht hinzugefügt",
+        "%@: усередині пакета або захищеної папки, не додано"],
+    "Add files or folders to the list directly, without a search. You can also drag them onto the list.": [
+        "Πρόσθεσε αρχεία ή φακέλους απευθείας στη λίστα, χωρίς αναζήτηση. Μπορείς και να τα σύρεις στη λίστα.",
+        "Aggiungi file o cartelle direttamente all’elenco, senza ricerca. Puoi anche trascinarli sull’elenco.",
+        "Füge Dateien oder Ordner direkt ohne Suche zur Liste hinzu. Du kannst sie auch auf die Liste ziehen.",
+        "Додайте файли чи папки до списку напряму, без пошуку. Їх також можна перетягнути в список."],
 }

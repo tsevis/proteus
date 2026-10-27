@@ -139,3 +139,12 @@
 "to (MB)" = "до (МБ)";
 "unchanged" = "без змін";
 "“%@” is a package (an app or a library). Proteus does not work inside packages." = "«%@» — це пакет (програма чи бібліотека). Proteus не працює всередині пакетів.";
+"Choose a Folder… and press Search: an empty name field lists everything inside it." = "Виберіть Папку… й натисніть «Шукати»: з порожнім полем назви буде показано весь вміст.";
+"Search inside a folder and its subfolders" = "Шукати в папці та її підпапках";
+"Two ways to fill this list" = "Два способи заповнити цей список";
+"Added: %lld" = "Додано: %lld";
+"Add Files…" = "Додати файли…";
+"Clear List" = "Очистити список";
+"Or drag files and folders from Finder onto this list, or use Add Files…" = "Або перетягніть файли й папки з Finder у цей список чи скористайтеся «Додати файли…»";
+"%@: inside a package or a protected folder, not added" = "%@: усередині пакета або захищеної папки, не додано";
+"Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Додайте файли чи папки до списку напряму, без пошуку. Їх також можна перетягнути в список.";

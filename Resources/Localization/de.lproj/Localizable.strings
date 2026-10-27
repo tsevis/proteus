@@ -139,3 +139,12 @@
 "to (MB)" = "bis (MB)";
 "unchanged" = "unverändert";
 "“%@” is a package (an app or a library). Proteus does not work inside packages." = "„%@“ ist ein Paket (eine App oder Mediathek). Proteus arbeitet nicht in Paketen.";
+"Choose a Folder… and press Search: an empty name field lists everything inside it." = "Wähle Ordner … und klicke auf Suchen: Ein leeres Namensfeld listet den gesamten Inhalt.";
+"Search inside a folder and its subfolders" = "In einem Ordner und seinen Unterordnern suchen";
+"Two ways to fill this list" = "Zwei Wege, diese Liste zu füllen";
+"Added: %lld" = "Hinzugefügt: %lld";
+"Add Files…" = "Dateien hinzufügen …";
+"Clear List" = "Liste leeren";
+"Or drag files and folders from Finder onto this list, or use Add Files…" = "Oder ziehe Dateien und Ordner aus dem Finder auf diese Liste oder nutze „Dateien hinzufügen …“";
+"%@: inside a package or a protected folder, not added" = "%@: liegt in einem Paket oder geschützten Ordner, nicht hinzugefügt";
+"Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Füge Dateien oder Ordner direkt ohne Suche zur Liste hinzu. Du kannst sie auch auf die Liste ziehen.";

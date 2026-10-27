@@ -27,7 +27,7 @@ final class SearchModel: ObservableObject {
     @Published var numberClashes = true { didSet { replan() } }
     @Published var restartNumbering = false { didSet { replan() } }
 
-    @Published private(set) var items: [FoundItem] = []
+    @Published var items: [FoundItem] = []
     @Published var selection: Set<String> = [] { didSet { if selection != oldValue { replan() } } }
     @Published var highlighted: Set<String> = []
     @Published var previewURL: URL?
@@ -39,7 +39,10 @@ final class SearchModel: ObservableObject {
     @Published private(set) var recentFolders: [URL] = RecentFolders.load()
 
     /// The matcher of the search whose results are on screen.
-    private(set) var searched: NameMatcher?
+    var searched: NameMatcher?
+    /// Items added by hand (dropped or chosen). They stay in the list across
+    /// searches until the list is cleared.
+    var pickedPaths: [String] = []
     private(set) var planByID: [String: RenameStep] = [:]
     var takenDates: [String: Date] = [:]
     /// Items whose EXIF date was already looked for, found or not.
@@ -86,7 +89,8 @@ final class SearchModel: ObservableObject {
     func relativeLocation(of item: FoundItem) -> String {
         guard let root = folder?.standardizedFileURL.path else { return item.url.path }
         let parent = item.url.deletingLastPathComponent().standardizedFileURL.path
-        let rel = parent.hasPrefix(root) ? String(parent.dropFirst(root.count)) : parent
+        let inside = parent == root || parent.hasPrefix(root + "/")
+        let rel = inside ? String(parent.dropFirst(root.count)) : parent
         return rel.isEmpty ? "/" : rel
     }
 
@@ -119,6 +123,7 @@ final class SearchModel: ObservableObject {
             takenDates = [:]
             datesTried = []
             selection = Set(found.map(\.id))
+            mergePicked()
             replan()
             highlighted = []
             status = String(localized: "Found: \(found.count)")
@@ -139,6 +144,7 @@ final class SearchModel: ObservableObject {
         searched = nil
         items = []
         selection = []
+        mergePicked()
         status = String(localized: "Settings changed. Press Search again.")
     }
 

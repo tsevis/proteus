@@ -43,6 +43,29 @@ struct ResultsTable: View {
             return .handled
         }
         .quickLookPreview($model.previewURL, in: model.highlightedURLs)
+        // Dropped onto the list, files and folders are added as they are,
+        // to rename; a folder is not searched inside.
+        .dropDestination(for: URL.self) { urls, _ in
+            model.addItems(urls)
+            return !urls.isEmpty
+        }
+        .overlay {
+            if model.items.isEmpty { emptyHint }
+        }
+    }
+
+    private var emptyHint: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "tray.and.arrow.down").font(.largeTitle).foregroundStyle(.tertiary)
+            Text("Two ways to fill this list")
+                .font(.headline)
+            Text("Choose a Folder… and press Search: an empty name field lists everything inside it.")
+            Text("Or drag files and folders from Finder onto this list, or use Add Files…")
+        }
+        .multilineTextAlignment(.center)
+        .foregroundStyle(.secondary)
+        .padding(24)
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder

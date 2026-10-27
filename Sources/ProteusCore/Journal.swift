@@ -57,3 +57,27 @@ public struct Journal: Codable, Sendable {
         return try JSONDecoder().decode(Journal.self, from: Data(contentsOf: url))
     }
 }
+
+extension Journal {
+    /// Where an item at `path` before the action is now, following its own
+    /// move and any move of a folder above it. With `undoing`, the reverse.
+    public func relocate(_ path: String, undoing: Bool) -> String {
+        // `/var` and `/private/var` are one place; a path that no longer
+        // exists cannot be resolved on disk, so this is done by its text.
+        func clean(_ url: URL) -> String {
+            let path = url.standardizedFileURL.path
+            let aliased = ["/private/var/", "/private/tmp/", "/private/etc/"].contains { path.hasPrefix($0) }
+            return aliased ? String(path.dropFirst("/private".count)) : path
+        }
+        // Forward, moves are replayed in the order they happened (deepest
+        // first); undoing, in reverse, which is the order Undo used.
+        let moves = undoing
+            ? entries.reversed().map { (from: clean($0.current), to: clean($0.original)) }
+            : entries.map { (from: clean($0.original), to: clean($0.current)) }
+        return moves.reduce(clean(URL(fileURLWithPath: path))) { current, move in
+            if current == move.from { return move.to }
+            if current.hasPrefix(move.from + "/") { return move.to + current.dropFirst(move.from.count) }
+            return current
+        }
+    }
+}
