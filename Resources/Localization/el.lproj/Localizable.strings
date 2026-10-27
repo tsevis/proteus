@@ -139,3 +139,12 @@
 "to (MB)" = "έως (MB)";
 "unchanged" = "χωρίς αλλαγή";
 "“%@” is a package (an app or a library). Proteus does not work inside packages." = "Το «%@» είναι πακέτο (εφαρμογή ή βιβλιοθήκη). Το Proteus δεν δουλεύει μέσα σε πακέτα.";
+"Choose a Folder… and press Search: an empty name field lists everything inside it." = "Διάλεξε Φάκελο… και πάτα Αναζήτηση: με κενό πεδίο ονόματος εμφανίζονται όλα όσα περιέχει.";
+"Search inside a folder and its subfolders" = "Αναζήτηση μέσα σε φάκελο και στους υποφακέλους του";
+"Two ways to fill this list" = "Δύο τρόποι να γεμίσει αυτή η λίστα";
+"Added: %lld" = "Προστέθηκαν: %lld";
+"Add Files…" = "Προσθήκη αρχείων…";
+"Clear List" = "Καθαρισμός λίστας";
+"Or drag files and folders from Finder onto this list, or use Add Files…" = "Ή σύρε αρχεία και φακέλους από το Finder σε αυτή τη λίστα, ή χρησιμοποίησε την Προσθήκη αρχείων…";
+"%@: inside a package or a protected folder, not added" = "%@: βρίσκεται μέσα σε πακέτο ή προστατευμένο φάκελο, δεν προστέθηκε";
+"Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Πρόσθεσε αρχεία ή φακέλους απευθείας στη λίστα, χωρίς αναζήτηση. Μπορείς και να τα σύρεις στη λίστα.";

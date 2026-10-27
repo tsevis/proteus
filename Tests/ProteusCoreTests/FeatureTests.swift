@@ -160,3 +160,51 @@ import Testing
         #expect(step.newName.utf8.count <= 255 || step.problem != nil)
     }
 }
+
+@Suite struct AddedByHand {
+    let box: Sandbox
+    init() throws { box = try Sandbox() }
+
+    // A folder added by hand and a file found inside it by a search must still
+    // be renamed deepest first, or the file's path is gone by its turn.
+    @Test func handPickedFolderAndSearchedChildRenameTogether() throws {
+        let folder = try box.make("Pete", folder: true)
+        try box.make("Pete/Pete.txt")
+        let child = try box.scan("Pete").filter { !$0.isDirectory }
+        let picked = FileScanner.items(for: [folder]).items
+        let steps = RenamePlanner.plan((picked + child).map { (item: $0, name: $0.name.replacingOccurrences(of: "Pete", with: "Mayor")) },
+                                       numberClashes: false)
+        let report = FileActions.apply(steps).report
+        #expect(report.failures.isEmpty)
+        #expect(box.exists("Mayor/Mayor.txt"))
+    }
+
+    @Test func refusesItemsInsidePackagesAndGit() throws {
+        let inPackage = try box.make("Lib.app/Contents/Info.plist")
+        let inGit = try box.make(".git/config")
+        let fine = try box.make("fine.txt")
+        let result = FileScanner.items(for: [inPackage, inGit, fine])
+        #expect(result.items.map(\.name) == ["fine.txt"])
+        #expect(result.refused.count == 2)
+    }
+}
+
+@Suite struct Relocation {
+    let box: Sandbox
+    init() throws { box = try Sandbox() }
+
+    // A hand-picked file inside a renamed folder must be found again at its
+    // new path after the rename, and at the old one after Undo.
+    @Test func followsAFileThroughRenameAndUndo() throws {
+        try box.make("Pete/Pete.txt")
+        let matcher = try NameMatcher(term: "Pete", caseSensitive: false, useRegex: false)
+        let found = try box.scan("Pete")
+        let outcome = FileActions.apply(RenamePlanner.plan(
+            found.map { (item: $0, name: matcher.replacing(in: $0.name, with: "Mayor")) }, numberClashes: false))
+        let picked = box.root.appendingPathComponent("Pete/Pete.txt").standardizedFileURL.path
+        let moved = outcome.journal.relocate(picked, undoing: false)
+        #expect(FileManager.default.fileExists(atPath: moved))
+        _ = outcome.journal.undo()
+        #expect(outcome.journal.relocate(moved, undoing: true) == picked)
+    }
+}

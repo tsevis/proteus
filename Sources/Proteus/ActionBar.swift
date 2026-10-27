@@ -30,6 +30,8 @@ struct ActionBar: View {
                 Divider()
                 Button("Export List as CSV…") { model.exportCSV() }
                     .disabled(model.items.isEmpty)
+                Button("Clear List") { model.clearList() }
+                    .disabled(model.items.isEmpty && !model.hasPicked)
             }
             .disabled(model.isBusy)
             .fixedSize()
