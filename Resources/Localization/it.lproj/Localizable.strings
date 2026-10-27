@@ -148,3 +148,5 @@
 "Or drag files and folders from Finder onto this list, or use Add Files…" = "Oppure trascina file e cartelle dal Finder su questo elenco, o usa Aggiungi file…";
 "%@: inside a package or a protected folder, not added" = "%@: si trova in un pacchetto o in una cartella protetta, non aggiunto";
 "Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Aggiungi file o cartelle direttamente all’elenco, senza ricerca. Puoi anche trascinarli sull’elenco.";
+"Remove from List" = "Rimuovi dall’elenco";
+"Removed from the list: %lld (files unchanged)" = "Rimossi dall’elenco: %lld (i file non sono cambiati)";

@@ -148,3 +148,5 @@
 "Or drag files and folders from Finder onto this list, or use Add Files…" = "Ή σύρε αρχεία και φακέλους από το Finder σε αυτή τη λίστα, ή χρησιμοποίησε την Προσθήκη αρχείων…";
 "%@: inside a package or a protected folder, not added" = "%@: βρίσκεται μέσα σε πακέτο ή προστατευμένο φάκελο, δεν προστέθηκε";
 "Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Πρόσθεσε αρχεία ή φακέλους απευθείας στη λίστα, χωρίς αναζήτηση. Μπορείς και να τα σύρεις στη λίστα.";
+"Remove from List" = "Αφαίρεση από τη λίστα";
+"Removed from the list: %lld (files unchanged)" = "Αφαιρέθηκαν από τη λίστα: %lld (τα αρχεία δεν άλλαξαν)";

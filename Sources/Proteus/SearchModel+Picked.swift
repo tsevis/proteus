@@ -45,7 +45,20 @@ extension SearchModel {
         }
     }
 
+    /// Takes items out of the list without touching them on disk.
+    func removeFromList(_ ids: Set<String>) {
+        guard !isBusy, !ids.isEmpty else { return }
+        removedPaths.formUnion(ids)
+        pickedPaths.removeAll { ids.contains($0) }
+        items.removeAll { ids.contains($0.id) }
+        highlighted.subtract(ids)
+        selection.subtract(ids)
+        replan()
+        status = String(localized: "Removed from the list: \(ids.count) (files unchanged)")
+    }
+
     func clearList() {
+        removedPaths = []
         pickedPaths = []
         searched = nil
         items = []
