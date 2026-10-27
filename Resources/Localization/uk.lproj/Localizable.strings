@@ -150,3 +150,4 @@
 "Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Додайте файли чи папки до списку напряму, без пошуку. Їх також можна перетягнути в список.";
 "Remove from List" = "Вилучити зі списку";
 "Removed from the list: %lld (files unchanged)" = "Вилучено зі списку: %lld (файли не змінено)";
+"Changes apply to the added items. Press Search to look in the folder as well." = "Зміни застосовуються до доданих елементів. Натисніть «Шукати», щоб шукати й у папці.";

@@ -150,3 +150,4 @@
 "Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Füge Dateien oder Ordner direkt ohne Suche zur Liste hinzu. Du kannst sie auch auf die Liste ziehen.";
 "Remove from List" = "Aus der Liste entfernen";
 "Removed from the list: %lld (files unchanged)" = "Aus der Liste entfernt: %lld (die Dateien bleiben unverändert)";
+"Changes apply to the added items. Press Search to look in the folder as well." = "Die Änderungen gelten für die hinzugefügten Objekte. Klicke auf Suchen, um auch im Ordner zu suchen.";
