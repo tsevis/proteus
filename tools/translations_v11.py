@@ -227,4 +227,9 @@ T = {
         "Αφαιρέθηκαν από τη λίστα: %lld (τα αρχεία δεν άλλαξαν)", "Rimossi dall’elenco: %lld (i file non sono cambiati)",
         "Aus der Liste entfernt: %lld (die Dateien bleiben unverändert)",
         "Вилучено зі списку: %lld (файли не змінено)"],
+    "Changes apply to the added items. Press Search to look in the folder as well.": [
+        "Οι αλλαγές εφαρμόζονται στα στοιχεία που πρόσθεσες. Πάτα Αναζήτηση για να ψάξεις και στον φάκελο.",
+        "Le modifiche valgono per gli elementi aggiunti. Premi Cerca per cercare anche nella cartella.",
+        "Die Änderungen gelten für die hinzugefügten Objekte. Klicke auf Suchen, um auch im Ordner zu suchen.",
+        "Зміни застосовуються до доданих елементів. Натисніть «Шукати», щоб шукати й у папці."],
 }

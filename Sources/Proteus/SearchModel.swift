@@ -149,7 +149,10 @@ final class SearchModel: ObservableObject {
         items = []
         selection = []
         mergePicked()
-        status = String(localized: "Settings changed. Press Search again.")
+        replan()
+        status = hasPicked
+            ? String(localized: "Changes apply to the added items. Press Search to look in the folder as well.")
+            : String(localized: "Settings changed. Press Search again.")
     }
 
     func setPlan(_ steps: [RenameStep]) {

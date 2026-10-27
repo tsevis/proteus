@@ -150,3 +150,4 @@
 "Add files or folders to the list directly, without a search. You can also drag them onto the list." = "Πρόσθεσε αρχεία ή φακέλους απευθείας στη λίστα, χωρίς αναζήτηση. Μπορείς και να τα σύρεις στη λίστα.";
 "Remove from List" = "Αφαίρεση από τη λίστα";
 "Removed from the list: %lld (files unchanged)" = "Αφαιρέθηκαν από τη λίστα: %lld (τα αρχεία δεν άλλαξαν)";
+"Changes apply to the added items. Press Search to look in the folder as well." = "Οι αλλαγές εφαρμόζονται στα στοιχεία που πρόσθεσες. Πάτα Αναζήτηση για να ψάξεις και στον φάκελο.";

@@ -36,13 +36,20 @@ extension SearchModel {
         guard hasPicked else { return }
         let current = FileScanner.items(for: pickedPaths.map { URL(fileURLWithPath: $0) }).items
         pickedPaths = current.map(\.id)
+        // Set before the selection changes, since that rebuilds the plan.
+        if searched == nil { searched = typedMatcher() }
         let known = Set(items.map(\.id))
         let fresh = current.filter { !known.contains($0.id) }
         items += fresh
         selection.formUnion(fresh.map(\.id))
-        if searched == nil {
-            searched = try? NameMatcher(term: "", caseSensitive: false, useRegex: false)
-        }
+    }
+
+    /// Hand-picked items need no search, so the name field applies to them
+    /// as it is typed. An unfinished regex falls back to matching nothing in
+    /// particular, which leaves every name unchanged.
+    func typedMatcher() -> NameMatcher? {
+        (try? NameMatcher(term: term, caseSensitive: caseSensitive, useRegex: useRegex))
+            ?? (try? NameMatcher(term: "", caseSensitive: false, useRegex: false))
     }
 
     /// Takes items out of the list without touching them on disk.
