@@ -1,16 +1,19 @@
 import AppKit
 import Foundation
+import ProteusCore
 
 @MainActor
 final class SearchModel: ObservableObject {
-    @Published var folder: URL?
-    @Published var term = ""
+    // Changing any search input discards the results, so an action can only
+    // ever use the search the table and the confirmation dialog describe.
+    @Published var folder: URL? { didSet { if folder != oldValue { discardResults() } } }
+    @Published var term = "" { didSet { if term != oldValue { discardResults() } } }
+    @Published var caseSensitive = false { didSet { if caseSensitive != oldValue { discardResults() } } }
+    @Published var useRegex = false { didSet { if useRegex != oldValue { discardResults() } } }
+    @Published var includeFiles = true { didSet { if includeFiles != oldValue { discardResults() } } }
+    @Published var includeFolders = true { didSet { if includeFolders != oldValue { discardResults() } } }
+    @Published var includeHidden = false { didSet { if includeHidden != oldValue { discardResults() } } }
     @Published var replacement = ""
-    @Published var caseSensitive = false
-    @Published var useRegex = false
-    @Published var includeFiles = true
-    @Published var includeFolders = true
-    @Published var includeHidden = false
 
     @Published private(set) var items: [FoundItem] = []
     @Published var selection: Set<String> = []
@@ -18,10 +21,35 @@ final class SearchModel: ObservableObject {
     @Published private(set) var failures: [String] = []
     @Published private(set) var isBusy = false
 
-    private var lastMatcher: NameMatcher?
+    /// The matcher of the search whose results are on screen.
+    private(set) var searched: NameMatcher?
+    /// Bumped by every search and every discard, so a slow scan that finishes
+    /// after the inputs changed cannot put stale results on screen.
+    private var generation = 0
 
     var selectedItems: [FoundItem] { items.filter { selection.contains($0.id) } }
     var canSearch: Bool { folder != nil && !term.isEmpty && !isBusy }
+    var canAct: Bool { searched != nil && !selection.isEmpty && !isBusy }
+
+    /// Selected items whose name the rename would actually change.
+    var renameTargets: [FoundItem] {
+        guard let searched else { return [] }
+        return selectedItems.filter {
+            FileActions.plannedName(for: $0, matcher: searched, replacement: replacement) != nil
+        }
+    }
+
+    /// Selected items not already inside another selected folder.
+    var trashTargets: [FoundItem] {
+        let selected = selectedItems
+        let covered = FileActions.coveredByFolder(selected)
+        return selected.filter { !covered.contains($0.id) }
+    }
+
+    /// A few "old → new" lines for the confirmation dialog.
+    var renameExamples: String {
+        renameTargets.prefix(3).map { "\($0.name) → \(newName(for: $0))" }.joined(separator: "\n")
+    }
 
     func chooseFolder() {
         let panel = NSOpenPanel()
@@ -33,7 +61,7 @@ final class SearchModel: ObservableObject {
     }
 
     func newName(for item: FoundItem) -> String {
-        lastMatcher?.replacing(in: item.name, with: replacement) ?? item.name
+        searched?.replacing(in: item.name, with: replacement) ?? item.name
     }
 
     func relativeLocation(of item: FoundItem) -> String {
@@ -47,7 +75,7 @@ final class SearchModel: ObservableObject {
     func selectNone() { selection = [] }
 
     func search() async {
-        guard let folder, !term.isEmpty else { return }
+        guard canSearch, let folder else { return }
         let matcher: NameMatcher
         do {
             matcher = try NameMatcher(term: term, caseSensitive: caseSensitive, useRegex: useRegex)
@@ -57,6 +85,8 @@ final class SearchModel: ObservableObject {
         }
         let options = ScanOptions(includeFiles: includeFiles, includeFolders: includeFolders,
                                   includeHidden: includeHidden)
+        generation += 1
+        let mine = generation
         isBusy = true
         status = "Αναζήτηση…"
         defer { isBusy = false }
@@ -64,18 +94,20 @@ final class SearchModel: ObservableObject {
             let found = try await Task.detached {
                 try FileScanner.scan(root: folder, matcher: matcher, options: options)
             }.value
-            lastMatcher = matcher
+            guard mine == generation else { return }
+            searched = matcher
             items = found
             selection = Set(found.map(\.id))
             status = "Βρέθηκαν \(found.count) αντικείμενα."
         } catch {
+            guard mine == generation else { return }
             status = "Σφάλμα αναζήτησης: \(error.localizedDescription)"
         }
     }
 
     func renameSelected() async {
-        guard let matcher = lastMatcher else { return }
-        let targets = selectedItems
+        guard canAct, let matcher = searched else { return }
+        let targets = renameTargets
         let replacement = replacement
         await perform("Μετονομάστηκαν") {
             FileActions.rename(targets, matcher: matcher, replacement: replacement)
@@ -83,8 +115,18 @@ final class SearchModel: ObservableObject {
     }
 
     func trashSelected() async {
+        guard canAct else { return }
         let targets = selectedItems
         await perform("Μεταφέρθηκαν στον Κάδο") { FileActions.trash(targets) }
+    }
+
+    private func discardResults() {
+        generation += 1
+        guard searched != nil || !items.isEmpty else { return }
+        searched = nil
+        items = []
+        selection = []
+        status = "Οι ρυθμίσεις άλλαξαν. Πάτα ξανά Αναζήτηση."
     }
 
     private func perform(_ verb: String, _ action: @escaping @Sendable () -> ActionReport) async {

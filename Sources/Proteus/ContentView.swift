@@ -1,3 +1,4 @@
+import ProteusCore
 import SwiftUI
 
 struct ContentView: View {
@@ -14,13 +15,13 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(minWidth: 820, minHeight: 520)
-        .confirmationDialog("Μετονομασία \(model.selectedItems.count) αντικειμένων;",
+        .confirmationDialog("Μετονομασία \(model.renameTargets.count) αντικειμένων;",
                             isPresented: $confirmRename) {
             Button("Μετονομασία") { Task { await model.renameSelected() } }
         } message: {
-            Text("«\(model.term)» → «\(model.replacement)»")
+            Text("«\(model.searched?.term ?? "")» → «\(model.replacement)»\n\n\(model.renameExamples)")
         }
-        .confirmationDialog("Μεταφορά \(model.selectedItems.count) αντικειμένων στον Κάδο;",
+        .confirmationDialog("Μεταφορά \(model.trashTargets.count) αντικειμένων στον Κάδο;",
                             isPresented: $confirmTrash) {
             Button("Στον Κάδο", role: .destructive) { Task { await model.trashSelected() } }
         } message: {
@@ -83,9 +84,9 @@ struct ContentView: View {
             TextField("Αντικατάσταση με… (π.χ. MayorPete)", text: $model.replacement)
                 .frame(maxWidth: 280)
             Button("Μετονομασία") { confirmRename = true }
-                .disabled(model.selection.isEmpty || model.isBusy)
+                .disabled(!model.canAct || model.renameTargets.isEmpty)
             Button("Στον Κάδο", role: .destructive) { confirmTrash = true }
-                .disabled(model.selection.isEmpty || model.isBusy)
+                .disabled(!model.canAct)
         }
     }
 
