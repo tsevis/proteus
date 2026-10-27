@@ -17,7 +17,7 @@ final class SearchModel: ObservableObject {
 
     @Published private(set) var items: [FoundItem] = []
     @Published var selection: Set<String> = []
-    @Published private(set) var status = "Διάλεξε φάκελο και γράψε τι ψάχνεις."
+    @Published private(set) var status = String(localized: "Choose a folder and type what you are looking for.")
     @Published private(set) var failures: [String] = []
     @Published private(set) var isBusy = false
 
@@ -56,7 +56,7 @@ final class SearchModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.prompt = "Επιλογή"
+        panel.prompt = String(localized: "Choose")
         if panel.runModal() == .OK { folder = panel.url }
     }
 
@@ -80,7 +80,7 @@ final class SearchModel: ObservableObject {
         do {
             matcher = try NameMatcher(term: term, caseSensitive: caseSensitive, useRegex: useRegex)
         } catch {
-            status = "Μη έγκυρη κανονική έκφραση: \(error.localizedDescription)"
+            status = String(localized: "Invalid regular expression: \(error.localizedDescription)")
             return
         }
         let options = ScanOptions(includeFiles: includeFiles, includeFolders: includeFolders,
@@ -88,7 +88,7 @@ final class SearchModel: ObservableObject {
         generation += 1
         let mine = generation
         isBusy = true
-        status = "Αναζήτηση…"
+        status = String(localized: "Searching…")
         defer { isBusy = false }
         do {
             let found = try await Task.detached {
@@ -98,10 +98,10 @@ final class SearchModel: ObservableObject {
             searched = matcher
             items = found
             selection = Set(found.map(\.id))
-            status = "Βρέθηκαν \(found.count) αντικείμενα."
+            status = String(localized: "Found: \(found.count)")
         } catch {
             guard mine == generation else { return }
-            status = "Σφάλμα αναζήτησης: \(error.localizedDescription)"
+            status = String(localized: "Search error: \(error.localizedDescription)")
         }
     }
 
@@ -109,7 +109,7 @@ final class SearchModel: ObservableObject {
         guard canAct, let matcher = searched else { return }
         let targets = renameTargets
         let replacement = replacement
-        await perform("Μετονομάστηκαν") {
+        await perform({ String(localized: "Renamed: \($0)") }) {
             FileActions.rename(targets, matcher: matcher, replacement: replacement)
         }
     }
@@ -117,7 +117,7 @@ final class SearchModel: ObservableObject {
     func trashSelected() async {
         guard canAct else { return }
         let targets = selectedItems
-        await perform("Μεταφέρθηκαν στον Κάδο") { FileActions.trash(targets) }
+        await perform({ String(localized: "Moved to Trash: \($0)") }) { FileActions.trash(targets) }
     }
 
     private func discardResults() {
@@ -126,16 +126,16 @@ final class SearchModel: ObservableObject {
         searched = nil
         items = []
         selection = []
-        status = "Οι ρυθμίσεις άλλαξαν. Πάτα ξανά Αναζήτηση."
+        status = String(localized: "Settings changed. Press Search again.")
     }
 
-    private func perform(_ verb: String, _ action: @escaping @Sendable () -> ActionReport) async {
+    private func perform(_ summary: (Int) -> String, _ action: @escaping @Sendable () -> ActionReport) async {
         isBusy = true
         let report = await Task.detached(operation: action).value
         isBusy = false
         failures = report.failures
         await search()
-        let failNote = report.failures.isEmpty ? "" : " — \(report.failures.count) απέτυχαν"
-        status = "\(verb): \(report.succeeded)\(failNote). " + status
+        let failNote = report.failures.isEmpty ? "" : " — " + String(localized: "Failed: \(report.failures.count)")
+        status = summary(report.succeeded) + failNote + ". " + status
     }
 }

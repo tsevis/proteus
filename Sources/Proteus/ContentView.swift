@@ -15,40 +15,42 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(minWidth: 820, minHeight: 520)
-        .confirmationDialog("Μετονομασία \(model.renameTargets.count) αντικειμένων;",
+        .confirmationDialog("Rename (\(model.renameTargets.count))?",
                             isPresented: $confirmRename) {
-            Button("Μετονομασία") { Task { await model.renameSelected() } }
+            Button("Rename") { Task { await model.renameSelected() } }
         } message: {
-            Text("«\(model.searched?.term ?? "")» → «\(model.replacement)»\n\n\(model.renameExamples)")
+            Text(verbatim: "«\(model.searched?.term ?? "")» → «\(model.replacement)»\n\n\(model.renameExamples)")
         }
-        .confirmationDialog("Μεταφορά \(model.trashTargets.count) αντικειμένων στον Κάδο;",
+        .confirmationDialog("Move to Trash (\(model.trashTargets.count))?",
                             isPresented: $confirmTrash) {
-            Button("Στον Κάδο", role: .destructive) { Task { await model.trashSelected() } }
+            Button("Move to Trash", role: .destructive) { Task { await model.trashSelected() } }
         } message: {
-            Text("Μπορείς να τα επαναφέρεις από τον Κάδο.")
+            Text("You can restore them from the Trash.")
         }
     }
 
     private var searchForm: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Button("Φάκελος…") { model.chooseFolder() }
-                Text(model.folder?.path ?? "Κανένας φάκελος")
-                    .foregroundStyle(model.folder == nil ? .secondary : .primary)
-                    .lineLimit(1).truncationMode(.middle)
+                Button("Folder…") { model.chooseFolder() }
+                Group {
+                    if let path = model.folder?.path { Text(verbatim: path) } else { Text("No folder") }
+                }
+                .foregroundStyle(model.folder == nil ? .secondary : .primary)
+                .lineLimit(1).truncationMode(.middle)
             }
             HStack {
-                TextField("Το όνομα περιέχει… (π.χ. Pete)", text: $model.term)
+                TextField("Name contains… (e.g. Pete)", text: $model.term)
                     .onSubmit { Task { await model.search() } }
-                Button("Αναζήτηση") { Task { await model.search() } }
+                Button("Search") { Task { await model.search() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!model.canSearch)
             }
             HStack(spacing: 16) {
-                Toggle("Αρχεία", isOn: $model.includeFiles)
-                Toggle("Φάκελοι", isOn: $model.includeFolders)
-                Toggle("Κρυφά", isOn: $model.includeHidden)
-                Toggle("Πεζά/κεφαλαία", isOn: $model.caseSensitive)
+                Toggle("Files", isOn: $model.includeFiles)
+                Toggle("Folders", isOn: $model.includeFolders)
+                Toggle("Hidden", isOn: $model.includeHidden)
+                Toggle("Match case", isOn: $model.caseSensitive)
                 Toggle("Regex", isOn: $model.useRegex)
             }
             .toggleStyle(.checkbox)
@@ -61,14 +63,14 @@ struct ContentView: View {
                 Toggle("", isOn: selectionBinding(for: item)).labelsHidden()
             }
             .width(24)
-            TableColumn("Όνομα") { item in
+            TableColumn("Name") { item in
                 Label(item.name, systemImage: item.isDirectory ? "folder" : "doc")
             }
-            TableColumn("Νέο όνομα") { item in
+            TableColumn("New name") { item in
                 let newName = model.newName(for: item)
                 Text(newName).foregroundStyle(newName == item.name ? .secondary : .primary)
             }
-            TableColumn("Θέση") { item in
+            TableColumn("Location") { item in
                 Text(model.relativeLocation(of: item)).foregroundStyle(.secondary)
             }
         }
@@ -78,14 +80,14 @@ struct ContentView: View {
         HStack {
             TsevisMark()
                 .padding(.trailing, 8)
-            Button("Όλα") { model.selectAll() }
-            Button("Κανένα") { model.selectNone() }
+            Button("All") { model.selectAll() }
+            Button("None") { model.selectNone() }
             Spacer()
-            TextField("Αντικατάσταση με… (π.χ. MayorPete)", text: $model.replacement)
+            TextField("Replace with… (e.g. MayorPete)", text: $model.replacement)
                 .frame(maxWidth: 280)
-            Button("Μετονομασία") { confirmRename = true }
+            Button("Rename") { confirmRename = true }
                 .disabled(!model.canAct || model.renameTargets.isEmpty)
-            Button("Στον Κάδο", role: .destructive) { confirmTrash = true }
+            Button("Move to Trash", role: .destructive) { confirmTrash = true }
                 .disabled(!model.canAct)
         }
     }
@@ -94,10 +96,10 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
                 if model.isBusy { ProgressView().controlSize(.small) }
-                Text(model.status).font(.callout)
+                Text(verbatim: model.status).font(.callout)
             }
             ForEach(model.failures, id: \.self) { failure in
-                Text(failure).font(.caption).foregroundStyle(.red)
+                Text(verbatim: failure).font(.caption).foregroundStyle(.red)
             }
         }
     }

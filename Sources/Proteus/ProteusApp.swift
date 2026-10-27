@@ -19,7 +19,7 @@ struct ProteusApp: App {
         .commands {
             // Replaces the standard About panel with the splash screen.
             CommandGroup(replacing: .appInfo) {
-                Button("Σχετικά με το Proteus") { isAboutPresented = true }
+                Button("About Proteus") { isAboutPresented = true }
             }
         }
     }

@@ -10,12 +10,16 @@ mkdir -p "$APP/Contents/MacOS"
 cp .build/release/Proteus "$APP/Contents/MacOS/"
 mkdir -p "$APP/Contents/Resources"
 cp Resources/AppIcon.icns Resources/TVDLogo.pdf Resources/SplashArt.jpg "$APP/Contents/Resources/"
+cp -R Resources/Localization/*.lproj "$APP/Contents/Resources/"
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key><string>Proteus</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array><string>en</string><string>el</string><string>it</string><string>de</string><string>uk</string></array>
     <key>CFBundleIdentifier</key><string>com.tsevis.proteus</string>
     <key>CFBundleExecutable</key><string>Proteus</string>
     <key>CFBundlePackageType</key><string>APPL</string>

@@ -124,11 +124,11 @@ public enum RenameError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidName(let name): return "Μη έγκυρο νέο όνομα «\(name)»"
-        case .alreadyExists(let name): return "Υπάρχει ήδη «\(name)» στον ίδιο φάκελο"
-        case .wouldHide(let name): return "Το «\(name)» αρχίζει με τελεία και θα γινόταν κρυφό"
-        case .vanished: return "Δεν υπάρχει πια, έχει μετακινηθεί ή σβηστεί από την αναζήτηση και μετά"
-        case .replaced: return "Στη θέση του υπάρχει πλέον άλλο αρχείο. Κάνε ξανά αναζήτηση"
+        case .invalidName(let name): return String(localized: "Invalid new name “\(name)”")
+        case .alreadyExists(let name): return String(localized: "“\(name)” already exists in the same folder")
+        case .wouldHide(let name): return String(localized: "“\(name)” starts with a dot and would become hidden")
+        case .vanished: return String(localized: "No longer there: moved or deleted since the search")
+        case .replaced: return String(localized: "Something else is now in its place. Search again")
         }
     }
 }

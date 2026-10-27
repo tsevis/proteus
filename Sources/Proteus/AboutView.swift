@@ -23,7 +23,7 @@ struct AboutView: View {
     var body: some View {
         VStack(spacing: 0) {
             keyArt
-            Text(Self.about)
+            Text(verbatim: Self.about)
                 .font(.system(size: 12.5))
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -59,12 +59,12 @@ struct AboutView: View {
                     Text(Brand.name)
                         .font(.system(size: Self.titleSize, weight: .semibold))
                         .tracking(-0.6)
-                    Text(Brand.tagline)
+                    Text(verbatim: Brand.tagline)
                         .font(.system(size: Self.subtitleSize))
                         .opacity(0.85)
                 }
                 Spacer()
-                Text(Brand.version)
+                Text(verbatim: Brand.version)
                     .font(.system(size: 11, weight: .medium))
                     .monospacedDigit()
                     .opacity(0.75)
@@ -88,7 +88,7 @@ struct AboutView: View {
                 link("tsevis.com", Brand.website)
                 link("github.com/tsevis", Brand.github)
                 Spacer()
-                Button("Συνέχεια", action: close)
+                Button("Continue", action: close)
                     .keyboardShortcut(.defaultAction)
             }
             .padding(.horizontal, 26)
@@ -104,17 +104,15 @@ struct AboutView: View {
             .pointerStyle(.link)
     }
 
-    private static let about = """
-        Διάλεξε έναν φάκελο και γράψε ένα κομμάτι ονόματος. Το Proteus βρίσκει \
-        κάθε αρχείο και φάκελο από κάτω του που το περιέχει, σου δείχνει πώς θα \
-        λέγεται το καθένα πριν αλλάξει οτιδήποτε, και μετά το μετονομάζει ή το \
-        στέλνει στον Κάδο. Με το Regex μπορείς να σβήσεις αριθμούς, κενά ή \
-        ολόκληρες λέξεις.
+    private static let about = String(localized: "about.body", defaultValue: """
+        Choose a folder and type part of a name. Proteus finds every file and \
+        folder beneath it whose name contains it, shows you what each one will be \
+        called before anything changes, and then renames it or moves it to the \
+        Trash. With Regex you can remove numbers, spaces or whole words.
 
-        Τίποτα δεν φεύγει από αυτόν τον υπολογιστή. Τίποτα δεν σβήνεται οριστικά: \
-        ό,τι πετάς πάει στον Κάδο, και ένα όνομα που υπάρχει ήδη δεν \
-        αντικαθίσταται ποτέ.
-        """
+        Nothing leaves this Mac. Nothing is deleted for good: whatever you throw \
+        away goes to the Trash, and a name that already exists is never replaced.
+        """)
 }
 
 /// Blurs and disables the window's content while the splash screen is open.
@@ -168,7 +166,7 @@ private struct AboutOverlay: View {
         // A containing element: a label set on the overlay itself would replace
         // the names of the links and the Continue button inside it.
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Σχετικά με το Proteus")
+        .accessibilityLabel("About Proteus")
         .accessibilityAddTraits(.isModal)
     }
 }

@@ -3,7 +3,7 @@ import AppKit
 /// The app's artwork and identity: the TVD mark, the splash key art and the version.
 enum Brand {
     static let name = "Proteus"
-    static let tagline = "Βρίσκει, μετονομάζει και πετάει αρχεία με βάση το όνομά τους."
+    static let tagline = String(localized: "Finds files by name, then renames them or moves them to the Trash.")
     static let website = URL(string: "https://tsevis.com")
     static let github = URL(string: "https://github.com/tsevis")
 
@@ -16,7 +16,7 @@ enum Brand {
         let info = Bundle.main.infoDictionary ?? [:]
         let short = info["CFBundleShortVersionString"] as? String ?? "?"
         let build = info["CFBundleVersion"] as? String ?? "?"
-        return "Έκδοση \(short) (\(build))"
+        return String(localized: "Version \(short) (\(build))")
     }
 
     private static func resource(_ name: String, _ ext: String) -> NSImage {
