@@ -6,6 +6,8 @@ Usage: python3 tools/translations.py
 """
 import pathlib
 
+from translations_v11 import T as T_V11
+
 LANGS = ["el", "it", "de", "uk"]
 
 T = {
@@ -14,14 +16,7 @@ T = {
     "Move to Trash (%lld)?": ["Μεταφορά στον Κάδο (%lld);", "Spostare nel Cestino (%lld)?",
                               "In den Papierkorb legen (%lld)?", "Перемістити в Смітник (%lld)?"],
     "Move to Trash": ["Στον Κάδο", "Sposta nel Cestino", "In den Papierkorb", "У Смітник"],
-    "You can restore them from the Trash.": ["Μπορείς να τα επαναφέρεις από τον Κάδο.",
-                                             "Puoi ripristinarli dal Cestino.",
-                                             "Du kannst sie aus dem Papierkorb wiederherstellen.",
-                                             "Їх можна відновити зі Смітника."],
     "Folder…": ["Φάκελος…", "Cartella…", "Ordner …", "Папка…"],
-    "No folder": ["Κανένας φάκελος", "Nessuna cartella", "Kein Ordner", "Папку не вибрано"],
-    "Name contains… (e.g. Pete)": ["Το όνομα περιέχει… (π.χ. Pete)", "Il nome contiene… (es. Pete)",
-                                   "Name enthält … (z. B. Pete)", "Назва містить… (напр. Pete)"],
     "Search": ["Αναζήτηση", "Cerca", "Suchen", "Шукати"],
     "Files": ["Αρχεία", "File", "Dateien", "Файли"],
     "Folders": ["Φάκελοι", "Cartelle", "Ordner", "Папки"],
@@ -33,8 +28,6 @@ T = {
     "Location": ["Θέση", "Posizione", "Ort", "Розташування"],
     "All": ["Όλα", "Tutti", "Alle", "Усі"],
     "None": ["Κανένα", "Nessuno", "Keine", "Жодного"],
-    "Replace with… (e.g. MayorPete)": ["Αντικατάσταση με… (π.χ. MayorPete)", "Sostituisci con… (es. MayorPete)",
-                                       "Ersetzen durch … (z. B. MayorPete)", "Замінити на… (напр. MayorPete)"],
     "Choose a folder and type what you are looking for.": [
         "Διάλεξε φάκελο και γράψε τι ψάχνεις.", "Scegli una cartella e scrivi cosa cerchi.",
         "Wähle einen Ordner und gib ein, wonach du suchst.", "Виберіть папку й введіть, що шукаєте."],
@@ -106,6 +99,9 @@ T = {
         "Ніщо не залишає цей Mac. Ніщо не видаляється назавжди: усе викинуте потрапляє до Смітника, а "
         "наявна назва ніколи не замінюється."],
 }
+
+
+T.update(T_V11)
 
 
 def escape(text: str) -> str:

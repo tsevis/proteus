@@ -2,94 +2,66 @@ import ProteusCore
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var model = SearchModel()
+    @ObservedObject var model: SearchModel
+    @ObservedObject private var inbox = FolderInbox.shared
     @State private var confirmRename = false
     @State private var confirmTrash = false
+    @State private var confirmUndo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            searchForm
-            resultsTable
-            actionBar
+            ScopeForm(model: model)
+            Picker("", selection: $model.mode) {
+                Text("Find & Replace").tag(SearchModel.Mode.findReplace)
+                Text("Batch Rename").tag(SearchModel.Mode.batch)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 360)
+            ResultsTable(model: model)
+            Group {
+                switch model.mode {
+                case .findReplace: FindReplacePanel(model: model)
+                case .batch: BatchRulesPanel(model: model)
+                }
+            }
+            ActionBar(model: model, confirmRename: $confirmRename, confirmTrash: $confirmTrash,
+                      confirmUndo: $confirmUndo)
             statusLine
         }
         .padding(16)
-        .frame(minWidth: 820, minHeight: 520)
-        .confirmationDialog("Rename (\(model.renameTargets.count))?",
-                            isPresented: $confirmRename) {
+        .frame(minWidth: 920, minHeight: 660)
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first else { return false }
+            model.open(url)
+            return true
+        }
+        .onReceive(inbox.$pending.compactMap { $0 }) { url in
+            model.open(url)
+            inbox.pending = nil
+        }
+        .confirmationDialog("Rename (\(model.renameTargets.count))?", isPresented: $confirmRename) {
             Button("Rename") { Task { await model.renameSelected() } }
         } message: {
-            Text(verbatim: "«\(model.searched?.term ?? "")» → «\(model.replacement)»\n\n\(model.renameExamples)")
+            Text(verbatim: renameMessage)
         }
-        .confirmationDialog("Move to Trash (\(model.trashTargets.count))?",
-                            isPresented: $confirmTrash) {
+        .confirmationDialog("Move to Trash (\(model.selectedItems.count))?", isPresented: $confirmTrash) {
             Button("Move to Trash", role: .destructive) { Task { await model.trashSelected() } }
         } message: {
-            Text("You can restore them from the Trash.")
+            Text("You can restore them from the Trash, or with Undo.")
+        }
+        .confirmationDialog("Undo the last action (\(model.lastJournal?.entries.count ?? 0))?",
+                            isPresented: $confirmUndo) {
+            Button("Undo") { Task { await model.undoLast() } }
+        } message: {
+            Text("Every item goes back to its previous name and place. Anything changed since is left alone.")
         }
     }
 
-    private var searchForm: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Button("Folder…") { model.chooseFolder() }
-                Group {
-                    if let path = model.folder?.path { Text(verbatim: path) } else { Text("No folder") }
-                }
-                .foregroundStyle(model.folder == nil ? .secondary : .primary)
-                .lineLimit(1).truncationMode(.middle)
-            }
-            HStack {
-                TextField("Name contains… (e.g. Pete)", text: $model.term)
-                    .onSubmit { Task { await model.search() } }
-                Button("Search") { Task { await model.search() } }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!model.canSearch)
-            }
-            HStack(spacing: 16) {
-                Toggle("Files", isOn: $model.includeFiles)
-                Toggle("Folders", isOn: $model.includeFolders)
-                Toggle("Hidden", isOn: $model.includeHidden)
-                Toggle("Match case", isOn: $model.caseSensitive)
-                Toggle("Regex", isOn: $model.useRegex)
-            }
-            .toggleStyle(.checkbox)
-        }
-    }
-
-    private var resultsTable: some View {
-        Table(model.items) {
-            TableColumn("") { item in
-                Toggle("", isOn: selectionBinding(for: item)).labelsHidden()
-            }
-            .width(24)
-            TableColumn("Name") { item in
-                Label(item.name, systemImage: item.isDirectory ? "folder" : "doc")
-            }
-            TableColumn("New name") { item in
-                let newName = model.newName(for: item)
-                Text(newName).foregroundStyle(newName == item.name ? .secondary : .primary)
-            }
-            TableColumn("Location") { item in
-                Text(model.relativeLocation(of: item)).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var actionBar: some View {
-        HStack {
-            TsevisMark()
-                .padding(.trailing, 8)
-            Button("All") { model.selectAll() }
-            Button("None") { model.selectNone() }
-            Spacer()
-            TextField("Replace with… (e.g. MayorPete)", text: $model.replacement)
-                .frame(maxWidth: 280)
-            Button("Rename") { confirmRename = true }
-                .disabled(!model.canAct || model.renameTargets.isEmpty)
-            Button("Move to Trash", role: .destructive) { confirmTrash = true }
-                .disabled(!model.canAct)
-        }
+    private var renameMessage: String {
+        let blocked = model.blockedSteps.count
+        let note = blocked == 0 ? "" : "\n\n" + String(localized: "Blocked, will be left alone: \(blocked)")
+        return model.renameExamples + note + "\n\n" + String(localized: "You can undo this afterwards.")
     }
 
     private var statusLine: some View {
@@ -98,18 +70,14 @@ struct ContentView: View {
                 if model.isBusy { ProgressView().controlSize(.small) }
                 Text(verbatim: model.status).font(.callout)
             }
-            ForEach(model.failures, id: \.self) { failure in
-                Text(verbatim: failure).font(.caption).foregroundStyle(.red)
+            ScrollView {
+                VStack(alignment: .leading) {
+                    ForEach(model.failures, id: \.self) { failure in
+                        Text(verbatim: failure).font(.caption).foregroundStyle(.red)
+                    }
+                }
             }
+            .frame(maxHeight: model.failures.isEmpty ? 0 : 60)
         }
-    }
-
-    private func selectionBinding(for item: FoundItem) -> Binding<Bool> {
-        Binding(
-            get: { model.selection.contains(item.id) },
-            set: { isOn in
-                if isOn { model.selection.insert(item.id) } else { model.selection.remove(item.id) }
-            }
-        )
     }
 }
